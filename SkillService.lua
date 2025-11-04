@@ -12,7 +12,10 @@
 	-- I dont know how to handle physics T-T
 ]]
 
--- K, i'll try to make a more "flat" and less "indented" version.
+-- OK SO WTH, i sent this code again for application AND IT GOT REJECTED!!! FOR "Not having enough commentary"
+-- BRO I COMMENTED THIS ENTIRE CODE, WHAT DO YOU WANT ME TO DO, YOU WANT ME TO COMMENT EACH SINGLE LINE?????
+-- OK, i'm going to comment more, ALSO that was the only complain from the response so NEXT TIME YOU GUYS ARE GOING
+-- TO ACCEPT RIGHT?????
 
 --// Service Setup -------------------------------------------------------------
 local Knit = require(game.ReplicatedStorage:WaitForChild("Packages").Knit)
@@ -65,14 +68,15 @@ function DetachBodyPart(character : Model, bodypartname : string)
 	-- Makes it so that the part doesnt phase through the ground
 	bodypart.CanCollide  = true
 
+	-- Goes through every single constraint in the torso and deletes them to detach the body part
 	for _, constraint:BallSocketConstraint in torso:GetChildren() do
 		if not constraint:IsA("BallSocketConstraint") then continue end
-		if constraint.Name ~= "RagdollConstraint" .. translated then continue end
+		if constraint.Name ~= "RagdollConstraint" .. translated then continue end -- The constraints are called RagdollConstraint
 		
 		constraint:Destroy()
 	end
 	
-	-- Turns on the Blood particle
+	-- Goes through all the blood particle emitters and enables them
 	for _, particle in bloodemitter:GetChildren() do
 		if not particle:IsA("ParticleEmitter") then continue end
 		
@@ -82,7 +86,7 @@ function DetachBodyPart(character : Model, bodypartname : string)
 	
 end
 
--- Pretty self-explative
+-- Welds one part to ther other using WeldConstraint
 function Weld(part0:Part, part1:Part)
 	local weld = Instance.new("WeldConstraint")
 	weld.Part0 = part0
@@ -117,11 +121,12 @@ function FindNearestCharacterAroundPart(part : Part, parttoignore : Part?) : Par
 	end
 	
 	-- Sorts the table and returns the part that is closest to the part that it is checking
-	local lowest = math.min(table.unpack(numblist))
-	local nearest
+	local lowest = math.min(table.unpack(numblist)) -- Returns the lowest value of the numblist
+	local nearest -- Will be assigned a value later
 	
+	-- Sorting process
 	for part, distance in listofparts do
-		if distance == lowest then
+		if distance == lowest then -- If distance is the lowest then return it and the distance
 			nearest = part
 			return nearest, distance
 		end
@@ -130,11 +135,11 @@ function FindNearestCharacterAroundPart(part : Part, parttoignore : Part?) : Par
 	
 end
 
--- Used later to convert the player'sbackpack to a table
+-- Used later to convert the player's backpack to a table
 function convertBackpackToTable(backpack : {Tool})
 	local converted = {}
 
-	for _, tool in backpack do
+	for _, tool in backpack do -- Goes through the backpack and inserts every tool into a table
 		table.insert(converted, tool.Name)
 	end
 
@@ -144,12 +149,12 @@ end
 -- Checks if the player isnt trying to use the skill while dead or stunned
 function CanUseSkill(character:Model) 
 	local hum = character:FindFirstChildOfClass("Humanoid")
-	return hum.Health > 0 and not character:GetAttribute("IsRagdoll")
+	return hum.Health > 0 and not character:GetAttribute("IsRagdoll") -- If the player is dead or ragdolled then return false
 end
 
 -- Ragdolls the player for a certain time
 function Ragdoll(character, duration)
-	task.spawn(function()
+	task.spawn(function() -- Creates a thread
 		character:SetAttribute("IsRagdoll", true)
 		task.wait(duration)
 		character:SetAttribute("IsRagdoll", false)
@@ -158,19 +163,20 @@ end
 
 -- Flips a "coin" and gets 1 or 2.
 function FlipCoin()
-	local coinside = math.random(1, 2)
+	local coinside = math.random(1, 2) -- Randomizes a value between 1 and 2 to represent each side
 	return coinside
 end
 
 -- Used for sills like AnnoyingBugs
 function Countdown(duration)
-	for i = duration, 1, -1 do
+	for i = duration, 1, -1 do -- For every second it decreases 1 from duration
 		print(i)
 		task.wait(1)
 	end
 end
 
 -- Ok, so for some reason game.Debris wasnt working so i made my own
+-- Schedules the item to be destroyed later
 function DebrisAddItem(instance, lifetime)
 	task.spawn(function()
 		task.wait(lifetime)
@@ -179,16 +185,18 @@ function DebrisAddItem(instance, lifetime)
 end
 -- Specific functions -----------------------
 
+
 function BonesHitboxLogic(humrootpart, characterhit)
-	task.spawn(function()
+	task.spawn(function() -- Creates a thread
 		local enemyhum = characterhit:FindFirstChildOfClass("Humanoid")
 		local enemytorso = characterhit:FindFirstChild("Torso")
 
+	
 		if characterhit:GetAttribute("State") == "Ragdoll" and enemyhum.Health > 10 then
-			ApplyImpulse(enemytorso, (humrootpart.CFrame.LookVector * 75) + Vector3.new(0, 300, 0))
-			VFXService:CastVFXToAllClients("Ragdoll", characterhit)
+			ApplyImpulse(enemytorso, (humrootpart.CFrame.LookVector * 75) + Vector3.new(0, 300, 0)) -- Applies an impulse
+			VFXService:CastVFXToAllClients("Ragdoll", characterhit) -- Casts the FX
 		elseif enemyhum.Health <= 10 then
-			characterhit:SetAttribute("IsRagdoll", true)
+			Ragdoll(characterhit, 999)
 			task.wait(0.2)
 
 			ApplyImpulse(enemytorso, (humrootpart.CFrame.LookVector * 50) + Vector3.new(0, 500, 0))
@@ -214,7 +222,7 @@ function DismantleHitboxLogic(humrootpart, characterhit, hitboxresult)
 		hitslashsfx.Parent = enemytorso
 		hitslashsfx:Play()
 
-		task.defer(function()
+		task.defer(function() -- Creates a thread that will be runned later
 			task.wait(2)
 			hitslashsfx:Destroy()
 		end)
@@ -222,14 +230,15 @@ function DismantleHitboxLogic(humrootpart, characterhit, hitboxresult)
 		-- This is used for a finisher that slices the player in half
 		-- Gojo reference
 		if table.find(hitboxresult.partsHit, enemytorso or enemyhumrootpart) and enemyhum.Health <= 30 then
-			enemyhum.Health = 0 -- Just to make sure
-			characterhit:SetAttribute("IsRagdoll", true)
+			enemyhum.Health = 0
+			Ragdoll(characterhit, 999)
 			task.wait(0.1)
 			DetachBodyPart(characterhit, "Left Leg")
 			DetachBodyPart(characterhit, "Right Leg")
 
-			enemytorso:ApplyImpulse((humrootpart.CFrame.LookVector * 500) + Vector3.new(0, 500, 0))
+			enemytorso:ApplyImpulse((humrootpart.CFrame.LookVector * 500) + Vector3.new(0, 500, 0)) -- Applies an impulse
 
+			-- Goes through every single blood particle and enables them
 			for _, particle in enemytorso:FindFirstChild("BloodEmitter"):GetChildren() do
 				if not particle:IsA("ParticleEmitter") then continue end
 
@@ -240,7 +249,7 @@ function DismantleHitboxLogic(humrootpart, characterhit, hitboxresult)
 
 		else -- If the hit wasn't a finisher
 			enemyhum:TakeDamage(30)
-			characterhit:SetAttribute("IsRagdoll", true)
+			Ragdoll(characterhit, 1)
 			task.wait(0.1)
 			enemytorso:ApplyImpulse(humrootpart.CFrame.LookVector * 500)
 			task.wait(1)
@@ -252,11 +261,8 @@ function DismantleHitboxLogic(humrootpart, characterhit, hitboxresult)
 	end)
 end
 
-function AnnoyingBugsHitboxLogic(parthit)
-end
-
 function BasicHitboxLogic(characterhit, damage)
-	task.spawn(function()
+	task.spawn(function() -- Creates another thread
 		local enemyhum = characterhit:FindFirstChildOfClass("Humanoid")
 		enemyhum:TakeDamage(damage)
 	end)
@@ -303,15 +309,12 @@ SkillService.Skills = {
 		Duration: 0.8
 	]]
 	["Bones"] = function(player:Player, cframe : CFrame)
-		assert((player:IsA("Player")), "Given player is not a player instance")
-		assert((typeof(cframe) == "CFrame"), "Given mousepos is not a CFrame")
-		
 		local MAX_DISTANCE = 50
 		local character = player.Character
 		local humrootpart:Part = character:FindFirstChild("HumanoidRootPart")
 		local hum = character:FindFirstChildOfClass("Humanoid")
 		
-		-- Checks
+		-- Checks if there isnt a CFrame, if the distance of the target isnt too far, and if the character isnt dead or ragdolled
 		if not cframe then return end
 		if (humrootpart.CFrame.Position - cframe.Position).Magnitude > MAX_DISTANCE then return end
 		if not CanUseSkill(character) then return end
@@ -337,9 +340,10 @@ SkillService.Skills = {
 		
 		-- Hitbox Logic
 		local hitboxresult = HitboxService.newstatichitbox(hitboxparams)
-		if not hitboxresult.hitSomething then
+		if not hitboxresult.hitSomething then -- If it didnt hit anyone
 			return
 		else
+			-- Goes through every single character and applies hitbox logic to them
 			for _, characterhit:Model in hitboxresult.charactersHit do
 				BonesHitboxLogic(humrootpart, characterhit)
 			end
@@ -357,15 +361,8 @@ SkillService.Skills = {
 		local hum = character:FindFirstChildOfClass("Humanoid")
 		
 		-- Checks if the player is dead or stunned
-		if hum.Health <= 0 or character:GetAttribute("IsRagdoll") == true then return end
+		if CanUseSkill(character) then return end
 		
-		local HitboxService = Knit.GetService("HitboxService")
-		local ClientManager = Knit.GetService("ClientManager")
-		local VFXService = Knit.GetService("VFXService")
-		
-		-- Handles the hitbox logic
-	
-	
 		-- Sets the hitbox parameters
 		local overlapparams = OverlapParams.new()
 		overlapparams.FilterType = Enum.RaycastFilterType.Exclude
@@ -433,9 +430,9 @@ SkillService.Skills = {
 		-- Used to randomize which side the creature is coming from
 		local flipcoin = FlipCoin()
 		if FlipCoin() == 1 then
-			annoyingbug:PivotTo(humrootpart.CFrame * CFrame.new(-math.random(5, 10), 0, 0))
+			annoyingbug:PivotTo(humrootpart.CFrame * CFrame.new(-math.random(5, 10), 0, 0)) -- Pivots the character to his left side
 		else
-			annoyingbug:PivotTo(humrootpart.CFrame * CFrame.new(math.random(5, 10), 0, 0))
+			annoyingbug:PivotTo(humrootpart.CFrame * CFrame.new(math.random(5, 10), 0, 0)) -- Pivots the character to his right side
 		end
 		
 		-- Creates a red smoke similar to Naruto Shadow Clone Jutsu
@@ -443,29 +440,27 @@ SkillService.Skills = {
 			annoyingbug.HumanoidRootPart, ColorSequence.new(Color3.fromRGB(255, 0, 0)))
 		bombfuse:Play()
 		
-		local starttime = tick()
+		local starttime = tick() -- Starts the time
 		task.spawn(function() -- Makes the creature run towards the nearest enemy
-			while (tick() - starttime) < 3 do
+			while (tick() - starttime) < 3 do -- While there has not been 3 seconds
 				local nearestpart, distance = FindNearestCharacterAroundPart(annoyingbug.HumanoidRootPart, humrootpart)
 
 				if distance < 20 then
 					annoyingbug:SetAttribute("InfiniteJump", true)
-
-	
-					if annoyingbug.Humanoid.FloorMaterial ~= Enum.Material.Air then
-						annoyingbug.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+					if annoyingbug.Humanoid.FloorMaterial ~= Enum.Material.Air then -- If the creature is already jumping
+						annoyingbug.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) -- Changes the state to stop the MoveTo from interfering
 					end
 				else
 					annoyingbug:SetAttribute("InfiniteJump", false)
-					annoyingbug.Humanoid:ChangeState(Enum.HumanoidStateType.Running)
+					annoyingbug.Humanoid:ChangeState(Enum.HumanoidStateType.Running) -- Goes back to running
 				end
 
-				annoyingbug.Humanoid:MoveTo(nearestpart.Position + Vector3.new(0, 0, -2))
+				annoyingbug.Humanoid:MoveTo(nearestpart.Position + Vector3.new(0, 0, -2)) -- Goes to the enemy's front
 				task.wait(0.2)
 			end
 		end)
 
-		Countdown(3)
+		Countdown(3) -- Counts to three
 		annoyingbug.Humanoid.Health = 0
 		bombfuse:Destroy()
 		annoyingbug.Head.Fuse.Fire.Fire.Enabled = false
@@ -481,19 +476,19 @@ SkillService.Skills = {
 			hitsRagdolls = true
 		}
 		local hitboxresult = HitboxService.newstatichitbox(hitboxparams)
-		if hitboxresult.hitSomething == false then return end
-		for _, characterhit:Model in hitboxresult.charactersHit do
+		if hitboxresult.hitSomething == false then return end -- Checks if the hitbox hit something
+		for _, characterhit:Model in hitboxresult.charactersHit do -- Goes through every character that was hit
 			print(characterhit)
-			BasicHitboxLogic(characterhit, 40)
+			BasicHitboxLogic(characterhit, 40) -- Applies damage to them
 		end
 		
 		-- Makes the explosion effect
-		
 		laterexplosion.Position = annoyingbug.HumanoidRootPart.Position
 		laterexplosion.Parent = workspace
 		infinitejumpConnect:Disconnect()
 		annoyingbug:Destroy()
 		
+		-- Schedules the explosion instance to be destroyed
 		DebrisAddItem(laterexplosion, 2)
 		
 	end,
@@ -513,13 +508,13 @@ SkillService.Skills = {
 
 		if not CanUseSkill(character) then return end
 
-		-- Quadratic Bezier
-		local function bezier(p0, p1, p2, t)
-			return (1 - t)^2 * p0 + 2 * (1 - t) * t * p1 + t^2 * p2
+		-- Quadratic Bezier function
+		local function bezier(p0, p1, p2, t) -- Dont expect me to explain this
+			return (1 - t)^2 * p0 + 2 * (1 - t) * t * p1 + t^2 * p2 -- LOTS OF MATH
 		end
 
-		-- Approximate curve length
-		local function approximateLength(p0, p1, p2, steps)
+		-- Approximates the curve's length
+		local function approximateLength(p0, p1, p2, steps) -- Ok this is used to avoid when the player uses the fireball too near of themselves
 			local length = 0
 			local prev = p0
 			for i = 1, steps do
@@ -531,50 +526,50 @@ SkillService.Skills = {
 			return length
 		end
 		-- Curve points
-		local start = (humrootpart.CFrame * CFrame.new(0, 0, 2)).Position
-		local endpoint = mousepos
+		local start = (humrootpart.CFrame * CFrame.new(0, 0, 2)).Position -- The player's front
+		local endpoint = mousepos -- The mouse's position
+		-- In the middle but with a randomized offset
 		local middle = (humrootpart.CFrame * CFrame.new(0, math.random(-10, 10), 0)) * CFrame.new(math.random(-(endpoint - start).Magnitude / 2, (endpoint - start).Magnitude / 2), 0, 0).Position
-		local finish
-		-- Effects
+		local finish -- To be assigned later in the code
+		-- Effects to the client
 		VFXService:CastVFXToAllClients("FireballCast", player)
 		VFXService:CastVFXToAllClients("Fireball", player, mousepos, middle)
 
-		-- Adaptive segment count
-		local curveLength = approximateLength(start, middle, endpoint, 15)
+		-- Defining the curve
+		local curveLength = approximateLength(start, middle, endpoint, 15) -- This value derermines the smoothness
 		local spacing = 1
 		local segments = math.floor(curveLength / spacing)
 		
+		-- This is used later
 		local raycastHit = false
 		local raycastparams = RaycastParams.new()
 		raycastparams.RespectCanCollide = true
 		local resultCFrame:CFrame
-		
 		local partHit = false
 		
-		-- 
+		-- This pre-assigns every step of the curve and puts them onto a table
 		local positions = {}
 		for i = 0, segments do
 			local t = i / segments
 			table.insert(positions, bezier(start, middle, endpoint, t))
 		end
 		
+		-- Creates the curve
 		for i = 2, #positions - 1 do
-			
-			
+			-- Defining the direction which t he fireball must be headed to
 			local origin = positions[i]
 			local target = positions[i + 1]
 			local direction = target - origin
+			
+			-- Raycasts the fireball to see if there's any obstacle
+			-- This is useful so that the fireball cant phase throug objects
 			local raycastResult = workspace:Raycast(origin, direction, raycastparams)
-
 			if raycastResult and raycastResult.Instance and raycastResult.Instance.Parent ~= character then
 				finish = raycastResult.Position
 				resultCFrame = CFrame.new(raycastResult.Position, raycastResult.Position + raycastResult.Normal) * CFrame.Angles(math.rad(90), 0, 0)
 				raycastHit = true
 				break
 			end
-			
-			
-			
 			if raycastHit == true or partHit == true then break end
 			
 			task.wait(0.01) -- adjust for speed
@@ -582,7 +577,8 @@ SkillService.Skills = {
 		
 		if finish == nil then finish = endpoint end
 		
-		local function visualizeRay(origin, direction, duration, color) -- Debugging only
+		-- Creates a part to vizualize the next raycast
+		local function visualizeRay(origin, direction, duration, color) -- Only used for debugging
 			duration = duration or 0.1 -- seconds to stay in the world
 			color = color or Color3.fromRGB(255, 0, 0)
 
@@ -599,18 +595,19 @@ SkillService.Skills = {
 			rayPart.Parent = workspace
 
 			-- Remove it after 'duration'
-			game:GetService("Debris"):AddItem(rayPart, duration)
+			DebrisAddItem(rayPart, duration)
 		end
 		
 		
-		-- This section that creates te Fire Area effect on the ground
+		-- Raycasts to see if the fireball is near or hit the ground
 		local raycastResult = workspace:Raycast(finish + Vector3.new(0, 5, 0), Vector3.new(0, -10, 0), raycastparams)
-		if raycastResult ~= nil then
+		if raycastResult ~= nil then -- Creates a FireArea on the ground
 			VFXService:CastVFXToAllClients("FireArea", player, raycastResult.Position)
 		end
-		if not raycastHit then
+		
+		if not resultCFrame then
 			VFXService:CastVFXToAllClients("FireballExplosion", player, resultCFrame or CFrame.new(finish.X, finish.Y, finish.Z), Vector3.new(math.random(45, 180), math.random(45, 180), math.random(45, 180)))
-		else
+		else -- If the fieball hit some obstacle, then the explosion should match the collision area
 			VFXService:CastVFXToAllClients("FireballExplosion", player, resultCFrame or CFrame.new(finish.X, finish.Y, finish.Z))
 		end
 		
@@ -628,32 +625,29 @@ SkillService.Skills = {
 
 		local hitbox = HitboxService.newstatichitbox(hitboxparams)
 
-		for _, characterhit in hitbox.charactersHit do
-			task.spawn(function()
-				local enemyhum = characterhit:FindFirstChildOfClass("Humanoid")
-				enemyhum:TakeDamage(20)
-			end)
+		for _, characterhit in hitbox.charactersHit do -- Goes through every single character hit
+			BasicHitboxLogic(characterhit, 20)
 		end
 	end,
 	
-	--[[
-		Description: Was meant for a cutscene, but right now its useless.
-	]]
-	["UltimateShowcase"] = function(player:Player)
-		local character = player.Character
-		local humrootpart:Part = character:FindFirstChild("HumanoidRootPart")
-		local hum = character:FindFirstChildOfClass("Humanoid")
+	----[[
+	--	Description: Was meant for a cutscene, but right now its useless.
+	--]]
+	--["UltimateShowcase"] = function(player:Player)
+	--	local character = player.Character
+	--	local humrootpart:Part = character:FindFirstChild("HumanoidRootPart")
+	--	local hum = character:FindFirstChildOfClass("Humanoid")
 		
-		if hum.Health <= 0 or character:GetAttribute("IsRagdoll") == true then return end
+	--	if hum.Health <= 0 or character:GetAttribute("IsRagdoll") == true then return end
 
-		local HitboxService = Knit.GetService("HitboxService")
-		local ClientManager = Knit.GetService("ClientManager")
-		local VFXService = Knit.GetService("VFXService")
+	--	local HitboxService = Knit.GetService("HitboxService")
+	--	local ClientManager = Knit.GetService("ClientManager")
+	--	local VFXService = Knit.GetService("VFXService")
 		
-		VFXService:CastVFXToAllClients("UltimateShowcase", player)
+	--	VFXService:CastVFXToAllClients("UltimateShowcase", player)
 		
 		
-	end,
+	--end,
 }
 
 --[[
@@ -677,18 +671,18 @@ end
 function SkillService:UseSkill(player : Player, skill : string, ...)
 	local character = player.Character
 	local hum = character:FindFirstChildOfClass("Humanoid")
-	local clientdata = ClientManager:getClient(player)
+	local clientdata = ClientManager:getClient(player) -- Trusting source of the player's moveset, comes from the server.
 	local clientmoveset = convertBackpackToTable(clientdata.Moveset)
 
-	if not table.find(clientmoveset, skill) then 
+	if not CanUseSkill(character) then return end -- Checks if the player is dead or ragdolled
+	if not table.find(clientmoveset, skill) then  -- Checks if there is the skill's name in the table
 		print("player dont got the move neccessary!")
 		return 
 	end
-	if not CanUseSkill(character) then return end
 	
+	-- Goes through the SkillService.Skills and executes the function assigned
 	local skill = self.Skills[skill]
 	if skill then skill(player, ...) end
-	
 end
 
 --[[
@@ -699,7 +693,7 @@ function SkillService.Client:UseSkill(player : Player, skill : string, ...)
 	local char = player.Character
 	local hum = char:FindFirstChildOfClass("Humanoid")
 
-	self.Server:UseSkill(player, skill, ...)
+	self.Server:UseSkill(player, skill, ...) -- Calls the functions before
 end
 
 return SkillService
