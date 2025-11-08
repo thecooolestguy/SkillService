@@ -52,17 +52,17 @@ local function TranslateToMotor6D(name : string)
 end
 
 -- Used for detaching body parts for gore effects
-local function DetachBodyPart(character : Model, bodypartname : string) 
+local function DetachBodyPart(character : Model, bodyPartName : string) 
 	local torso:Part = character:FindFirstChild("Torso")
-	local bodypart:Part = character:FindFirstChild(bodypartname)
-	local bloodemitter = bodypart:FindFirstChild("BloodEmitter")
-	local translated = TranslateToMotor6D(bodypartname)
+	local bodyPart:Part = character:FindFirstChild(bodyPartName)
+	local bloodEmitter = bodyPart:FindFirstChild("BloodEmitter")
+	local translated = TranslateToMotor6D(bodyPartName)
 	
 	-- Checking the variables
-	if not bodypart or not bloodemitter or not translated then return end
+	if not bodyPart or not bloodEmitter or not translated then return end
 	
 	-- Makes it so that the part doesnt phase through the ground
-	bodypart.CanCollide  = true
+	bodyPart.CanCollide  = true
 
 	-- Goes through every single constraint in the torso and deletes them to detach the body part
 	for _, constraint:BallSocketConstraint in torso:GetChildren() do
@@ -72,7 +72,7 @@ local function DetachBodyPart(character : Model, bodypartname : string)
 	end
 	
 	-- Goes through all the blood particle emitters and enables them
-	for _, particle in bloodemitter:GetChildren() do
+	for _, particle in bloodEmitter:GetChildren() do
 		if not particle:IsA("ParticleEmitter") then continue end
 		particle.Enabled = true
 	end
@@ -167,11 +167,8 @@ end
 
 -- Ok, so for some reason game.Debris wasnt working so i made my own
 -- Schedules the item to be destroyed later
-local function DebrisAddItem(instance, lifetime)
-	task.spawn(function()
-		task.wait(lifetime)
-		instance:Destroy()
-	end)
+local function ScheduleDestroy(instance, lifetime)
+	task.delay(lifetime, instance.Destroy, instance)
 end
 -- Specific functions -----------------------
 
@@ -243,6 +240,9 @@ local function DismantleHitboxLogic(humrootpart, characterhit, hitboxresult)
 			task.wait(1)
 			characterhit:SetAttribute("IsRagdoll", false)
 		end
+
+
+
 	end)
 end
 
@@ -276,6 +276,7 @@ SkillService.Skills = {
 		Ragdoll(character, 999)
 		
 		task.wait(0.1)
+		
 		DetachBodyPart(character, "Right Arm")
 		DetachBodyPart(character, "Left Arm")
 		DetachBodyPart(character, "Left Leg")
@@ -283,6 +284,7 @@ SkillService.Skills = {
 		DetachBodyPart(character, "Head")
 		
 		torso:ApplyImpulse(Vector3.new(0, 25, 0))
+		
 		hum.Health = 0
 	end,
 	
@@ -302,7 +304,8 @@ SkillService.Skills = {
 		if not cframe then return end
 		if (humrootpart.CFrame.Position - cframe.Position).Magnitude > MAX_DISTANCE then return end
 		if not CanUseSkill(character) then return end
-	
+		
+		
 		-- Sets the hitbox parameters
 		local overlapparams = OverlapParams.new()
 		overlapparams.FilterType = Enum.RaycastFilterType.Exclude
@@ -374,6 +377,8 @@ SkillService.Skills = {
 		end
 		
 	end,
+	
+
 	["AnnoyingBugs"] = function(player:Player)
 		--[[
 		Description: Summons a bug that runs after the nearest enemy and explodes itself after some time
@@ -405,14 +410,13 @@ SkillService.Skills = {
 		laterexplosion.DestroyJointRadiusPercent = 0
 		
 		local infinitejumpConnect = annoyingbug.AttributeChanged:Connect(function(attribute) -- Its used later to make the creature jump when close to the enemy
-			if attribute == "InfiniteJump" then
-				task.spawn(function()
-					while annoyingbug:GetAttribute("InfiniteJump") == true do
-						annoyingbug.Humanoid.Jump = true
-						task.wait(0.2)
-					end
-				end)
-			end
+			if attribute ~= "InfiniteJump" then return end
+			task.spawn(function()
+				while annoyingbug:GetAttribute("InfiniteJump") == true do
+					annoyingbug.Humanoid.Jump = true
+					task.wait(0.2)
+				end
+			end)
 		end)
 		
 		local flipcoin = FlipCoin() -- Used to randomize which side the creature is coming from
@@ -430,7 +434,7 @@ SkillService.Skills = {
 		
 		local starttime = tick() -- Starts the time
 		task.spawn(function() -- Without this part, the NPC wouldn't follow the enemy
-			while (tick() - starttime) < 3 do
+			while (tick() - starttime) < 2.8 do
 				local nearestpart, distance = FindNearestCharacterAroundPart(annoyingbug.HumanoidRootPart, humrootpart)
 
 				if distance < 20 then
@@ -477,7 +481,7 @@ SkillService.Skills = {
 		laterexplosion.Position = annoyingbug.HumanoidRootPart.Position
 		laterexplosion.Parent = workspace
 		annoyingbug:Destroy()
-		DebrisAddItem(laterexplosion, 2) -- Schedules the explosion instance to be destroyed
+		ScheduleDestroy(laterexplosion, 1) -- Schedules the instance to be destroyed
 	end,
 	
 	
@@ -553,7 +557,8 @@ SkillService.Skills = {
 			-- Raycasts the fireball to see if there's any obstacle
 			-- This is useful so that the fireball cant phase throug objects
 			local raycastResult = workspace:Raycast(origin, direction, raycastparams)
-			if raycastResult and raycastResult.Instance and raycastResult.Instance.Parent ~= character then
+			if not raycastResult and not raycastResult.Instance and not raycastResult.Instance.Parent ~= character then
+			else
 				finish = raycastResult.Position
 				resultCFrame = CFrame.new(raycastResult.Position, raycastResult.Position + raycastResult.Normal) * CFrame.Angles(math.rad(90), 0, 0)
 				raycastHit = true
@@ -561,14 +566,14 @@ SkillService.Skills = {
 			end
 			if raycastHit == true or partHit == true then break end
 			
-			task.wait(0.01) -- adjust for speed
+			task.wait(0.01) -- used to adjust speed
 		end
 		
 		if finish == nil then finish = endpoint end
 		
 		-- Creates a part to vizualize the next raycast
 		local function visualizeRay(origin, direction, duration, color) -- Only used for debugging
-			duration = duration or 0.1 -- seconds to stay in the world
+			duration = duration or 0.1 -- Seconds to stay in the world
 			color = color or Color3.fromRGB(255, 0, 0)
 
 			-- Create a thin Part to represent the ray
@@ -584,7 +589,7 @@ SkillService.Skills = {
 			rayPart.Parent = workspace
 
 			-- Remove it after 'duration'
-			DebrisAddItem(rayPart, duration)
+			ScheduleDestroy(rayPart, duration)
 		end
 		
 		
