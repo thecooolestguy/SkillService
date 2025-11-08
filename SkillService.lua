@@ -1,9 +1,6 @@
 --[[
-	SkillService.lua
-	Function: Handles all skill logic and hitbox interactions server-side.
+	This script exists to handle all the skills present in the battlegrounds game
 	Libraries: Knit Framework
-	Last Updated: 31/10/2025
-	Author: coolguy3338/isaquinhoo
 	Notes:
 	-- Each skill is registered in SkillService.Skills
 	-- Uses HitboxService to handle hitbox logic
@@ -24,39 +21,38 @@ local SkillService = Knit.CreateService {
 	Client = {}
 }
 
--- Dependancies
+-- Services
 local HitboxService = nil
 local ClientManager = nil
 local VFXService = nil
 local ClientManager = nil
 local runservice = game:GetService("RunService")
 
+-- Constants
+local MOTOR6DNAMES = {
+	["Left Arm"] = "Left Shoulder",
+	["Right Arm"] = "Right Shoulder",
+	["Left Leg"] = "Left Hip",
+	["Right Leg"] = "Right Hip",
+	["Head"] = "Neck"
+}
+
 
 --// Helper functions ----------------------------------------------------------
 -- General functions -------------------------
 
 -- Applys impulse to a part in the center of mass
-function ApplyImpulse(part : Part, impulse : Vector3)
+local function ApplyImpulse(part : Part, impulse : Vector3)
 	part:ApplyImpulseAtPosition(impulse * part.AssemblyMass, part.AssemblyCenterOfMass)
 end
 
 -- Used for translating body part names to Motor6D names for ragdolling
-function TranslateToMotor6D(name : string)
-	if name == "Left Arm" then
-		return "Left Shoulder"
-	elseif name == "Right Arm" then
-		return "Right Shoulder"
-	elseif name == "Left Leg" then
-		return "Left Hip"
-	elseif name == "Right Leg" then
-		return "Right Hip"
-	elseif name == "Head" then
-		return "Neck"
-	end
+local function TranslateToMotor6D(name : string)
+	return MOTOR6DNAMES[name] or nil
 end
 
 -- Used for detaching body parts for gore effects
-function DetachBodyPart(character : Model, bodypartname : string) 
+local function DetachBodyPart(character : Model, bodypartname : string) 
 	local torso:Part = character:FindFirstChild("Torso")
 	local bodypart:Part = character:FindFirstChild(bodypartname)
 	local bloodemitter = bodypart:FindFirstChild("BloodEmitter")
@@ -72,22 +68,18 @@ function DetachBodyPart(character : Model, bodypartname : string)
 	for _, constraint:BallSocketConstraint in torso:GetChildren() do
 		if not constraint:IsA("BallSocketConstraint") then continue end
 		if constraint.Name ~= "RagdollConstraint" .. translated then continue end -- The constraints are called RagdollConstraint
-		
 		constraint:Destroy()
 	end
 	
 	-- Goes through all the blood particle emitters and enables them
 	for _, particle in bloodemitter:GetChildren() do
 		if not particle:IsA("ParticleEmitter") then continue end
-		
 		particle.Enabled = true
 	end
-	
-	
 end
 
 -- Welds one part to ther other using WeldConstraint
-function Weld(part0:Part, part1:Part)
+local function Weld(part0:Part, part1:Part)
 	local weld = Instance.new("WeldConstraint")
 	weld.Part0 = part0
 	weld.Part1 = part1
@@ -95,7 +87,7 @@ function Weld(part0:Part, part1:Part)
 end
 
 -- Checks for the nearest character to a certain part and ignores another specified part
-function FindNearestCharacterAroundPart(part : Part, parttoignore : Part?) : Part
+local function FindNearestCharacterAroundPart(part : Part, parttoignore : Part?) : Part
 	local listofparts = {}
 	local numblist = {}
 	
@@ -131,12 +123,10 @@ function FindNearestCharacterAroundPart(part : Part, parttoignore : Part?) : Par
 			return nearest, distance
 		end
 	end
-	
-	
 end
 
 -- Used later to convert the player's backpack to a table
-function convertBackpackToTable(backpack : {Tool})
+local function convertBackpackToTable(backpack : {Tool})
 	local converted = {}
 
 	for _, tool in backpack do -- Goes through the backpack and inserts every tool into a table
@@ -147,13 +137,13 @@ function convertBackpackToTable(backpack : {Tool})
 end
 
 -- Checks if the player isnt trying to use the skill while dead or stunned
-function CanUseSkill(character:Model) 
+local function CanUseSkill(character:Model) 
 	local hum = character:FindFirstChildOfClass("Humanoid")
 	return hum.Health > 0 and not character:GetAttribute("IsRagdoll") -- If the player is dead or ragdolled then return false
 end
 
 -- Ragdolls the player for a certain time
-function Ragdoll(character, duration)
+local function Ragdoll(character, duration)
 	task.spawn(function() -- Creates a thread
 		character:SetAttribute("IsRagdoll", true)
 		task.wait(duration)
@@ -162,13 +152,13 @@ function Ragdoll(character, duration)
 end
 
 -- Flips a "coin" and gets 1 or 2.
-function FlipCoin()
+local function FlipCoin()
 	local coinside = math.random(1, 2) -- Randomizes a value between 1 and 2 to represent each side
 	return coinside
 end
 
 -- Used for sills like AnnoyingBugs
-function Countdown(duration)
+local function Countdown(duration)
 	for i = duration, 1, -1 do -- For every second it decreases 1 from duration
 		print(i)
 		task.wait(1)
@@ -177,7 +167,7 @@ end
 
 -- Ok, so for some reason game.Debris wasnt working so i made my own
 -- Schedules the item to be destroyed later
-function DebrisAddItem(instance, lifetime)
+local function DebrisAddItem(instance, lifetime)
 	task.spawn(function()
 		task.wait(lifetime)
 		instance:Destroy()
@@ -186,7 +176,7 @@ end
 -- Specific functions -----------------------
 
 
-function BonesHitboxLogic(humrootpart, characterhit)
+local function BonesHitboxLogic(humrootpart, characterhit)
 	task.spawn(function() -- Creates a thread
 		local enemyhum = characterhit:FindFirstChildOfClass("Humanoid")
 		local enemytorso = characterhit:FindFirstChild("Torso")
@@ -205,11 +195,9 @@ function BonesHitboxLogic(humrootpart, characterhit)
 
 		enemyhum:TakeDamage(10)
 	end)
-	
-	
 end
 
-function DismantleHitboxLogic(humrootpart, characterhit, hitboxresult)
+local function DismantleHitboxLogic(humrootpart, characterhit, hitboxresult)
 	-- Ok, so i used a task.spawn here, cuz some times the attack hits multiple targets
 	task.spawn(function()
 
@@ -255,13 +243,10 @@ function DismantleHitboxLogic(humrootpart, characterhit, hitboxresult)
 			task.wait(1)
 			characterhit:SetAttribute("IsRagdoll", false)
 		end
-
-
-
 	end)
 end
 
-function BasicHitboxLogic(characterhit, damage)
+local function BasicHitboxLogic(characterhit, damage)
 	task.spawn(function() -- Creates another thread
 		local enemyhum = characterhit:FindFirstChildOfClass("Humanoid")
 		enemyhum:TakeDamage(damage)
@@ -273,13 +258,13 @@ end
 -- Each skill has a function that is called when the skill is used
 -- Some functions/skills need extra parameters like mouse position and that is handled in SkillUse()
 -- I'll explain what each skills does in case you haven't played the game
-SkillService.Skills = {
-	--[[
+SkillService.Skills = {	
+	["SelfExplosion"] = function(player:Player)
+		--[[
 		Description: It explodes the character, by detaching every body part and emitting blood.
 		Duration: 0.1
 		Brief note: To this moment it does not apply damage
-	]]
-	["SelfExplosion"] = function(player:Player)
+		]]
 		local character = player.Character
 		local hum = character:FindFirstChildOfClass("Humanoid")
 		local torso = character:FindFirstChild("Torso")
@@ -291,7 +276,6 @@ SkillService.Skills = {
 		Ragdoll(character, 999)
 		
 		task.wait(0.1)
-		
 		DetachBodyPart(character, "Right Arm")
 		DetachBodyPart(character, "Left Arm")
 		DetachBodyPart(character, "Left Leg")
@@ -299,16 +283,16 @@ SkillService.Skills = {
 		DetachBodyPart(character, "Head")
 		
 		torso:ApplyImpulse(Vector3.new(0, 25, 0))
-		
 		hum.Health = 0
 	end,
 	
-	--[[
+	
+	["Bones"] = function(player:Player, cframe : CFrame)
+		--[[
 		Description: This skill creates a warning VFX and then it creates a hitbox 
 		that damages the player if they touch it
 		Duration: 0.8
-	]]
-	["Bones"] = function(player:Player, cframe : CFrame)
+		]]
 		local MAX_DISTANCE = 50
 		local character = player.Character
 		local humrootpart:Part = character:FindFirstChild("HumanoidRootPart")
@@ -318,8 +302,7 @@ SkillService.Skills = {
 		if not cframe then return end
 		if (humrootpart.CFrame.Position - cframe.Position).Magnitude > MAX_DISTANCE then return end
 		if not CanUseSkill(character) then return end
-		
-		
+	
 		-- Sets the hitbox parameters
 		local overlapparams = OverlapParams.new()
 		overlapparams.FilterType = Enum.RaycastFilterType.Exclude
@@ -350,12 +333,13 @@ SkillService.Skills = {
 		end
 	end,
 	
-	--[[
+	
+	["Dismantle"] = function(player:Player, cframe:CFrame, randomtilt : number)
+		--[[
 		Description: Creates a slash that goes forward and slices players with low health
 		Duration: 0.8
 		Brief note: Based on Dismantle from Sukuna JJK
-	]]
-	["Dismantle"] = function(player:Player, cframe:CFrame, randomtilt : number)
+		]]
 		local character = player.Character
 		local humrootpart = character:FindFirstChild("HumanoidRootPart")
 		local hum = character:FindFirstChildOfClass("Humanoid")
@@ -390,14 +374,15 @@ SkillService.Skills = {
 		end
 		
 	end,
-	
-	--[[
+	["AnnoyingBugs"] = function(player:Player)
+		--[[
 		Description: Summons a bug that runs after the nearest enemy and explodes itself after some time
 		similar to a time bomb.
 		Duration: 2.5
 		Brief note: Uses c00lkid as the bug
-	]]
-	["AnnoyingBugs"] = function(player:Player)
+		]]
+		
+		-- Setup
 		local character = player.Character
 		local humrootpart = character:FindFirstChild("HumanoidRootPart")
 		local hum = character:FindFirstChildOfClass("Humanoid")
@@ -405,12 +390,20 @@ SkillService.Skills = {
 		if not CanUseSkill(character) then return end
 		
 		local annoyingbug = game.ReplicatedStorage.VFX.BugSummon.annoyingbug:Clone()
-		local bombfuse = game.SoundService.VFX.BombFuse:Clone()
-		local laterexplosion = Instance.new("Explosion")
+		annoyingbug.HumanoidRootPart.Anchored = false
+		
 		local classicexplosionsfx = game.SoundService.VFX.ClassicExplosion:Clone()
+		classicexplosionsfx.Parent = annoyingbug.HumanoidRootPart
+		
+		local bombfuse = game.SoundService.VFX.BombFuse:Clone()
+		bombfuse.Parent = annoyingbug.Head
+		bombfuse.Looped = true
+		
+		local laterexplosion = Instance.new("Explosion")
 		laterexplosion.BlastRadius = 0
 		laterexplosion.BlastPressure = 0
 		laterexplosion.DestroyJointRadiusPercent = 0
+		
 		local infinitejumpConnect = annoyingbug.AttributeChanged:Connect(function(attribute) -- Its used later to make the creature jump when close to the enemy
 			if attribute == "InfiniteJump" then
 				task.spawn(function()
@@ -421,49 +414,48 @@ SkillService.Skills = {
 				end)
 			end
 		end)
-		bombfuse.Parent = annoyingbug.Head
-		bombfuse.Looped = true
-		annoyingbug.Parent = workspace.NPCS
-		annoyingbug.HumanoidRootPart.Anchored = false
-		classicexplosionsfx.Parent = annoyingbug.HumanoidRootPart
 		
-		-- Used to randomize which side the creature is coming from
-		local flipcoin = FlipCoin()
+		local flipcoin = FlipCoin() -- Used to randomize which side the creature is coming from
 		if FlipCoin() == 1 then
 			annoyingbug:PivotTo(humrootpart.CFrame * CFrame.new(-math.random(5, 10), 0, 0)) -- Pivots the character to his left side
 		else
 			annoyingbug:PivotTo(humrootpart.CFrame * CFrame.new(math.random(5, 10), 0, 0)) -- Pivots the character to his right side
 		end
 		
-		-- Creates a red smoke similar to Naruto Shadow Clone Jutsu
+		-- Action
+		annoyingbug.Parent = workspace.NPCS
 		VFXService:CastVFXToAllClients("Summon", annoyingbug.HumanoidRootPart.CFrame, 
 			annoyingbug.HumanoidRootPart, ColorSequence.new(Color3.fromRGB(255, 0, 0)))
 		bombfuse:Play()
 		
 		local starttime = tick() -- Starts the time
-		task.spawn(function() -- Makes the creature run towards the nearest enemy
-			while (tick() - starttime) < 3 do -- While there has not been 3 seconds
+		task.spawn(function() -- Without this part, the NPC wouldn't follow the enemy
+			while (tick() - starttime) < 3 do
 				local nearestpart, distance = FindNearestCharacterAroundPart(annoyingbug.HumanoidRootPart, humrootpart)
 
 				if distance < 20 then
 					annoyingbug:SetAttribute("InfiniteJump", true)
-					if annoyingbug.Humanoid.FloorMaterial ~= Enum.Material.Air then -- If the creature is already jumping
-						annoyingbug.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) -- Changes the state to stop the MoveTo from interfering
+					
+					-- This is used to make sure the MoveTo doesnt interfere with the jumping
+					if annoyingbug.Humanoid.FloorMaterial ~= Enum.Material.Air then
+						annoyingbug.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 					end
 				else
 					annoyingbug:SetAttribute("InfiniteJump", false)
-					annoyingbug.Humanoid:ChangeState(Enum.HumanoidStateType.Running) -- Goes back to running
+					annoyingbug.Humanoid:ChangeState(Enum.HumanoidStateType.Running)
 				end
 
-				annoyingbug.Humanoid:MoveTo(nearestpart.Position + Vector3.new(0, 0, -2)) -- Goes to the enemy's front
+				-- Set Z at (-2) to avoid the creature from jumping above the enemy's head
+				annoyingbug.Humanoid:MoveTo(nearestpart.Position + Vector3.new(0, 0, -2))
 				task.wait(0.2)
 			end
+			annoyingbug.Humanoid.Health = 0
+			annoyingbug.Head.Fuse.Fire.Fire.Enabled = false
+			bombfuse:Destroy()
+			infinitejumpConnect:Disconnect()
 		end)
-
-		Countdown(3) -- Counts to three
-		annoyingbug.Humanoid.Health = 0
-		bombfuse:Destroy()
-		annoyingbug.Head.Fuse.Fire.Fire.Enabled = false
+		
+		Countdown(3)
 
 		-- Hitbox logic
 		local overlapparams = OverlapParams.new()
@@ -482,26 +474,23 @@ SkillService.Skills = {
 			BasicHitboxLogic(characterhit, 40) -- Applies damage to them
 		end
 		
-		-- Makes the explosion effect
 		laterexplosion.Position = annoyingbug.HumanoidRootPart.Position
 		laterexplosion.Parent = workspace
-		infinitejumpConnect:Disconnect()
 		annoyingbug:Destroy()
-		
-		-- Schedules the explosion instance to be destroyed
-		DebrisAddItem(laterexplosion, 2)
-		
+		DebrisAddItem(laterexplosion, 2) -- Schedules the explosion instance to be destroyed
 	end,
 	
-	--[[
+	
+	["Fireball"] = function(player:Player, mousepos:Vector3)
+		--[[
 		Description: Casts a Fireball that targets the player's mouse position and explodes on impact,
 		dealing damage
 		Duration: Variable
 		Brief note: Uses a Quadratic Bezier to make a curve effect on the Fireball's path,
 		anticipates the positions for performance and approximates the curve lenght to avoid lag,
 		vizualizeRay is meant for debugging reasons
-	]]
-	["Fireball"] = function(player:Player, mousepos:Vector3)
+		]]
+		
 		local character = player.Character
 		local humrootpart:Part = character:FindFirstChild("HumanoidRootPart")
 		local hum = character:FindFirstChildOfClass("Humanoid")
@@ -629,46 +618,28 @@ SkillService.Skills = {
 			BasicHitboxLogic(characterhit, 20)
 		end
 	end,
-	
-	----[[
-	--	Description: Was meant for a cutscene, but right now its useless.
-	--]]
-	--["UltimateShowcase"] = function(player:Player)
-	--	local character = player.Character
-	--	local humrootpart:Part = character:FindFirstChild("HumanoidRootPart")
-	--	local hum = character:FindFirstChildOfClass("Humanoid")
-		
-	--	if hum.Health <= 0 or character:GetAttribute("IsRagdoll") == true then return end
-
-	--	local HitboxService = Knit.GetService("HitboxService")
-	--	local ClientManager = Knit.GetService("ClientManager")
-	--	local VFXService = Knit.GetService("VFXService")
-		
-	--	VFXService:CastVFXToAllClients("UltimateShowcase", player)
-		
-		
-	--end,
 }
 
---[[
-	This function is called when Knit starts.
-]]
-function SkillService:KnitStart()
+
+function SkillService:KnitStart()	
+	-- This function is called when Knit starts.
+
 	HitboxService = Knit.GetService("HitboxService")
 	ClientManager = Knit.GetService("ClientManager")
 	VFXService = Knit.GetService("VFXService")
 	print("SkillService started!")
 end
 
---[[
+function SkillService:UseSkill(player : Player, skill : string, ...)
+	--[[
 	This functions is called from the client,
 	and the client will send the skill name, and the parameters needed for the skill.
 	For example, the player wants to use the "Fireball" skill, the client will send the skill name, 
 	and the position of the mouse.
 	Then the server will check if the player has the skill, and if the player is in range of the skill.
 	Then the server will execute the skill, and the server will send the vfx to all clients.
-]]
-function SkillService:UseSkill(player : Player, skill : string, ...)
+	]]
+	
 	local character = player.Character
 	local hum = character:FindFirstChildOfClass("Humanoid")
 	local clientdata = ClientManager:getClient(player) -- Trusting source of the player's moveset, comes from the server.
@@ -685,11 +656,11 @@ function SkillService:UseSkill(player : Player, skill : string, ...)
 	if skill then skill(player, ...) end
 end
 
---[[
+function SkillService.Client:UseSkill(player : Player, skill : string, ...)
+	--[[
 	This is the client side of the skill service.
 	The client will send the skill name, and the parameters needed for the skill.
-]]
-function SkillService.Client:UseSkill(player : Player, skill : string, ...)
+	]]
 	local char = player.Character
 	local hum = char:FindFirstChildOfClass("Humanoid")
 
