@@ -5,8 +5,14 @@
 	-- Each skill is registered in SkillService.Skills
 	-- Uses HitboxService to handle hitbox logic
 	-- Uses VFXService to send VFX to the client
-	-- I've already sent this code to application once dozens of times
+	-- I've already sent this code to application once and they said that it was too nested and indented
+	-- I dont know how to handle physics T-T
 ]]
+
+-- OK SO WTH, i sent this code again for application AND IT GOT REJECTED!!! FOR "Not having enough commentary"
+-- BRO I COMMENTED THIS ENTIRE CODE, WHAT DO YOU WANT ME TO DO, YOU WANT ME TO COMMENT EACH SINGLE LINE?????
+-- OK, i'm going to comment more, ALSO that was the only complain from the response so NEXT TIME YOU GUYS ARE GOING
+-- TO ACCEPT RIGHT?????
 
 -- essentialblue, i belive all of the times i used task.spawn were necessary, if i take them out it makes
 -- the hitboxes dont work properly, please let me apply for scripter role
@@ -171,77 +177,70 @@ end
 
 
 local function BonesHitboxLogic(humrootpart, characterhit)
-	task.spawn(function() -- Creates a thread
-		local enemyhum = characterhit:FindFirstChildOfClass("Humanoid")
-		local enemytorso = characterhit:FindFirstChild("Torso")
+	local enemyhum = characterhit:FindFirstChildOfClass("Humanoid")
+	local enemytorso = characterhit:FindFirstChild("Torso")
 
-	
-		if characterhit:GetAttribute("State") == "Ragdoll" and enemyhum.Health > 10 then
-			ApplyImpulse(enemytorso, (humrootpart.CFrame.LookVector * 75) + Vector3.new(0, 300, 0)) -- Applies an impulse
-			VFXService:CastVFXToAllClients("Ragdoll", characterhit) -- Casts the FX
-		elseif enemyhum.Health <= 10 then
-			Ragdoll(characterhit, 999)
-			task.wait(0.2)
 
-			ApplyImpulse(enemytorso, (humrootpart.CFrame.LookVector * 50) + Vector3.new(0, 500, 0))
-			VFXService:CastVFXToAllClients("Ragdoll", characterhit)
-		end
+	if characterhit:GetAttribute("State") == "Ragdoll" and enemyhum.Health > 10 then
+		ApplyImpulse(enemytorso, (humrootpart.CFrame.LookVector * 75) + Vector3.new(0, 300, 0)) -- Applies an impulse
+		VFXService:CastVFXToAllClients("Ragdoll", characterhit) -- Casts the FX
+	elseif enemyhum.Health <= 10 then
+		Ragdoll(characterhit, 999)
+		task.wait(0.2)
 
-		enemyhum:TakeDamage(10)
-	end)
+		ApplyImpulse(enemytorso, (humrootpart.CFrame.LookVector * 50) + Vector3.new(0, 500, 0))
+		VFXService:CastVFXToAllClients("Ragdoll", characterhit)
+	end
+
+	enemyhum:TakeDamage(10)
 end
 
 local function DismantleHitboxLogic(humrootpart, characterhit, hitboxresult)
 	-- Ok, so i used a task.spawn here, cuz some times the attack hits multiple targets
-	task.spawn(function()
+	local enemyhum = characterhit:FindFirstChildOfClass("Humanoid")
+	local enemytorso = characterhit:FindFirstChild("Torso")
+	local enemyhumrootpart = characterhit:FindFirstChild("HumanoidRootPart")
 
-		local enemyhum = characterhit:FindFirstChildOfClass("Humanoid")
-		local enemytorso = characterhit:FindFirstChild("Torso")
-		local enemyhumrootpart = characterhit:FindFirstChild("HumanoidRootPart")
+	-- Creates a slash sound in the enemy torso
+	local hitslashsfx = game.SoundService.VFX.Slash:Clone()
+	hitslashsfx.Parent = enemytorso
+	hitslashsfx:Play()
 
-		-- Creates a slash sound in the enemy torso
-		local hitslashsfx = game.SoundService.VFX.Slash:Clone()
-		hitslashsfx.Parent = enemytorso
-		hitslashsfx:Play()
-
-		task.defer(function() -- Creates a thread that will be runned later
-			task.wait(2)
-			hitslashsfx:Destroy()
-		end)
-
-		-- This is used for a finisher that slices the player in half
-		-- Gojo reference
-		if table.find(hitboxresult.partsHit, enemytorso or enemyhumrootpart) and enemyhum.Health <= 30 then
-			enemyhum.Health = 0
-			Ragdoll(characterhit, 999)
-			task.wait(0.1)
-			DetachBodyPart(characterhit, "Left Leg")
-			DetachBodyPart(characterhit, "Right Leg")
-
-			enemytorso:ApplyImpulse((humrootpart.CFrame.LookVector * 500) + Vector3.new(0, 500, 0)) -- Applies an impulse
-
-			-- Goes through every single blood particle and enables them
-			for _, particle in enemytorso:FindFirstChild("BloodEmitter"):GetChildren() do
-				if not particle:IsA("ParticleEmitter") then continue end
-
-				particle.Enabled = true
-			end
-		else -- If the hit wasn't a finisher
-			enemyhum:TakeDamage(30)
-			Ragdoll(characterhit, 1)
-			task.wait(0.1)
-			enemytorso:ApplyImpulse(humrootpart.CFrame.LookVector * 500)
-			task.wait(1)
-			characterhit:SetAttribute("IsRagdoll", false)
-		end
+	task.defer(function() -- Creates a thread that will be runned later
+		task.wait(2)
+		hitslashsfx:Destroy()
 	end)
+
+	-- This is used for a finisher that slices the player in half
+	-- Gojo reference
+	if table.find(hitboxresult.partsHit, enemytorso or enemyhumrootpart) and enemyhum.Health <= 30 then
+		enemyhum.Health = 0
+		Ragdoll(characterhit, 999)
+		task.wait(0.1)
+		DetachBodyPart(characterhit, "Left Leg")
+		DetachBodyPart(characterhit, "Right Leg")
+
+		enemytorso:ApplyImpulse((humrootpart.CFrame.LookVector * 500) + Vector3.new(0, 500, 0)) -- Applies an impulse
+
+		-- Goes through every single blood particle and enables them
+		for _, particle in enemytorso:FindFirstChild("BloodEmitter"):GetChildren() do
+			if not particle:IsA("ParticleEmitter") then continue end
+
+			particle.Enabled = true
+		end
+	else -- If the hit wasn't a finisher
+		enemyhum:TakeDamage(30)
+		Ragdoll(characterhit, 1)
+		task.wait(0.1)
+		enemytorso:ApplyImpulse(humrootpart.CFrame.LookVector * 500)
+		task.wait(1)
+		characterhit:SetAttribute("IsRagdoll", false)
+	end
 end
 
 local function BasicHitboxLogic(characterhit, damage)
-	task.spawn(function() -- Creates another thread
-		local enemyhum = characterhit:FindFirstChildOfClass("Humanoid")
-		enemyhum:TakeDamage(damage)
-	end)
+	local enemyhum = characterhit:FindFirstChildOfClass("Humanoid")
+	enemyhum:TakeDamage(damage)
 end
 
 --// Skills Dictionary --------------------------------------------------------------
@@ -278,7 +277,7 @@ SkillService.Skills = {
 		
 		hum.Health = 0
 	end,
-
+	
 	["Bones"] = function(player:Player, cframe : CFrame)
 		--[[
 		Description: This skill creates a warning VFX and then it creates a hitbox 
@@ -321,11 +320,13 @@ SkillService.Skills = {
 		else
 			-- Goes through every single character and applies hitbox logic to them
 			for _, characterhit:Model in hitboxresult.charactersHit do
-				BonesHitboxLogic(humrootpart, characterhit)
+				task.spawn(function()
+					BonesHitboxLogic(humrootpart, characterhit)
+				end)
 			end
 		end
 	end,
-
+	
 	["Dismantle"] = function(player:Player, cframe:CFrame, randomtilt : number)
 		--[[
 		Description: Creates a slash that goes forward and slices players with low health
@@ -361,7 +362,9 @@ SkillService.Skills = {
 			-- Goes through every single character that was hit from the hitbox
 			for _, characterhit:Model in hitboxresult.charactersHit do
 				if characterhit == character then continue end -- Makes sure to not hit the player that used the attack
-				DismantleHitboxLogic(humrootpart, characterhit, hitboxresult)
+				task.spawn(function()
+					DismantleHitboxLogic(humrootpart, characterhit, hitboxresult)
+				end)
 			end
 		end
 	end,
@@ -462,7 +465,9 @@ SkillService.Skills = {
 		if hitboxresult.hitSomething == false then return end -- Checks if the hitbox hit something
 		for _, characterhit:Model in hitboxresult.charactersHit do -- Goes through every character that was hit
 			print(characterhit)
-			BasicHitboxLogic(characterhit, 40) -- Applies damage to them
+			task.spawn(function()
+				BasicHitboxLogic(characterhit, 40) -- Applies damage to them
+			end)
 		end
 		
 		laterexplosion.Position = annoyingbug.HumanoidRootPart.Position
@@ -470,8 +475,7 @@ SkillService.Skills = {
 		annoyingbug:Destroy()
 		ScheduleDestroy(laterexplosion, 1) -- Schedules the instance to be destroyed
 	end,
-	
-	
+
 	["Fireball"] = function(player:Player, mousepos:Vector3)
 		--[[
 		Description: Casts a Fireball that targets the player's mouse position and explodes on impact,
@@ -544,7 +548,7 @@ SkillService.Skills = {
 			-- Raycasts the fireball to see if there's any obstacle
 			-- This is useful so that the fireball cant phase throug objects
 			local raycastResult = workspace:Raycast(origin, direction, raycastparams)
-			if not raycastResult and not raycastResult.Instance and not raycastResult.Instance.Parent ~= character then
+			if not raycastResult and not raycastResult.Instance and raycastResult.Instance.Parent ~= character then
 			else
 				finish = raycastResult.Position
 				resultCFrame = CFrame.new(raycastResult.Position, raycastResult.Position + raycastResult.Normal) * CFrame.Angles(math.rad(90), 0, 0)
@@ -606,7 +610,9 @@ SkillService.Skills = {
 		local hitbox = HitboxService.newstatichitbox(hitboxparams)
 
 		for _, characterhit in hitbox.charactersHit do -- Goes through every single character hit
-			BasicHitboxLogic(characterhit, 20)
+			task.spawn(function()
+				BasicHitboxLogic(characterhit, 20)
+			end)
 		end
 	end,
 }
@@ -614,6 +620,7 @@ SkillService.Skills = {
 
 function SkillService:KnitStart()	
 	-- This function is called when Knit starts.
+
 	HitboxService = Knit.GetService("HitboxService")
 	ClientManager = Knit.GetService("ClientManager")
 	VFXService = Knit.GetService("VFXService")
@@ -640,7 +647,7 @@ function SkillService:UseSkill(player : Player, skill : string, ...)
 		print("player dont got the move neccessary!")
 		return 
 	end
-
+	
 	-- Goes through the SkillService.Skills and executes the function assigned
 	local skill = self.Skills[skill]
 	if skill then skill(player, ...) end
@@ -658,4 +665,3 @@ function SkillService.Client:UseSkill(player : Player, skill : string, ...)
 end
 
 return SkillService
-
