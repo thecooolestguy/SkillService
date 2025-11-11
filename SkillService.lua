@@ -5,14 +5,11 @@
 	-- Each skill is registered in SkillService.Skills
 	-- Uses HitboxService to handle hitbox logic
 	-- Uses VFXService to send VFX to the client
-	-- I've already sent this code to application once and they said that it was too nested and indented
-	-- I dont know how to handle physics T-T
+	-- I've already sent this code to application once dozens of times
 ]]
 
--- OK SO WTH, i sent this code again for application AND IT GOT REJECTED!!! FOR "Not having enough commentary"
--- BRO I COMMENTED THIS ENTIRE CODE, WHAT DO YOU WANT ME TO DO, YOU WANT ME TO COMMENT EACH SINGLE LINE?????
--- OK, i'm going to comment more, ALSO that was the only complain from the response so NEXT TIME YOU GUYS ARE GOING
--- TO ACCEPT RIGHT?????
+-- essentialblue, i belive all of the times i used task.spawn were necessary, if i take them out it makes
+-- the hitboxes dont work properly, please let me apply for scripter role
 
 --// Service Setup -------------------------------------------------------------
 local Knit = require(game.ReplicatedStorage:WaitForChild("Packages").Knit)
@@ -229,9 +226,6 @@ local function DismantleHitboxLogic(humrootpart, characterhit, hitboxresult)
 
 				particle.Enabled = true
 			end
-
-
-
 		else -- If the hit wasn't a finisher
 			enemyhum:TakeDamage(30)
 			Ragdoll(characterhit, 1)
@@ -240,9 +234,6 @@ local function DismantleHitboxLogic(humrootpart, characterhit, hitboxresult)
 			task.wait(1)
 			characterhit:SetAttribute("IsRagdoll", false)
 		end
-
-
-
 	end)
 end
 
@@ -287,8 +278,7 @@ SkillService.Skills = {
 		
 		hum.Health = 0
 	end,
-	
-	
+
 	["Bones"] = function(player:Player, cframe : CFrame)
 		--[[
 		Description: This skill creates a warning VFX and then it creates a hitbox 
@@ -335,8 +325,7 @@ SkillService.Skills = {
 			end
 		end
 	end,
-	
-	
+
 	["Dismantle"] = function(player:Player, cframe:CFrame, randomtilt : number)
 		--[[
 		Description: Creates a slash that goes forward and slices players with low health
@@ -375,10 +364,8 @@ SkillService.Skills = {
 				DismantleHitboxLogic(humrootpart, characterhit, hitboxresult)
 			end
 		end
-		
 	end,
 	
-
 	["AnnoyingBugs"] = function(player:Player)
 		--[[
 		Description: Summons a bug that runs after the nearest enemy and explodes itself after some time
@@ -591,8 +578,7 @@ SkillService.Skills = {
 			-- Remove it after 'duration'
 			ScheduleDestroy(rayPart, duration)
 		end
-		
-		
+	
 		-- Raycasts to see if the fireball is near or hit the ground
 		local raycastResult = workspace:Raycast(finish + Vector3.new(0, 5, 0), Vector3.new(0, -10, 0), raycastparams)
 		if raycastResult ~= nil then -- Creates a FireArea on the ground
@@ -628,7 +614,6 @@ SkillService.Skills = {
 
 function SkillService:KnitStart()	
 	-- This function is called when Knit starts.
-
 	HitboxService = Knit.GetService("HitboxService")
 	ClientManager = Knit.GetService("ClientManager")
 	VFXService = Knit.GetService("VFXService")
@@ -655,7 +640,7 @@ function SkillService:UseSkill(player : Player, skill : string, ...)
 		print("player dont got the move neccessary!")
 		return 
 	end
-	
+
 	-- Goes through the SkillService.Skills and executes the function assigned
 	local skill = self.Skills[skill]
 	if skill then skill(player, ...) end
@@ -673,3 +658,4 @@ function SkillService.Client:UseSkill(player : Player, skill : string, ...)
 end
 
 return SkillService
+
